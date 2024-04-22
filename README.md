@@ -9,7 +9,7 @@ There are five main parts to this
 commands for conducting the simulation study. Read through the documented code
 on `run_sims.html` (which is the knitted version of `run_sims.Rmd`), and when
 you are ready to run it your self, use `run_sims.R` (which is the result of
-`knitr::purl(run_sims.Rmd)`). Each instance of the script can generate and
+`knitr::purl("run_sims.Rmd")`). Each instance of the script can generate and
 analyze an arbitrary number of simulated datasets for one of the 96 data
 generating mechanisms presented in the manuscript. However, for some of the data
 generating mechanisms it takes many minutes or even hours to analyze a single
