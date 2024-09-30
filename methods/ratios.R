@@ -10,55 +10,43 @@
 #'n_curr is the sample size of the current study
 #'X_orig is the original covariates in the current study
 #'X_aug the added covariates in the current study
-#'theta_tilde_no_intercept effect size estimates from the historical study for the original covariates (drop the intercept)
+#'theta_tilde effect size estimates from the historical study for the original covariates (drop the intercept)
 
-
-
-ratios <- function(Y, X_orig, X_aug, theta_tilde_no_intercept) {
+ratios <- function(Y, X, theta_tilde) {
   
-  p <- ncol(X_orig)
-  q <- ncol(X_aug)
-  dimnames(X_orig) <-
-    dimnames(X_aug) <- NULL
+  p <- length(theta_tilde)
+  q <- ncol(X) - p
+  orig_names <- names(theta_tilde)
+  aug_names <- setdiff(colnames(X), names(theta_tilde))
   
-  #' Step 1: calculate residuals
-  mod <- lm(X_aug ~ X_orig)
+  #' Step 1: calculate W residuals
+  mod <- lm(glue('cbind({glue_collapse(aug_names, sep = ",")}) ~ {glue_collapse(orig_names, sep = "+")}'), data = data.frame(X))
   gamma <- t(coef(mod))
-  if(p == 1) {
-    gamma_names = "X_orig"
-  } else {
-    gamma_names <- paste0("X_orig", 1:p)
-  }
   
-  W <- resid(mod)
-  
-  #' Step 2: fit the glm model 
-  theta.X <- X_orig %*% theta_tilde_no_intercept
-  fit <- glm(Y ~ theta.X + W, family = "binomial")
-  alpha <- fit$coefficients
+  W <- resid(mod) 
   if(q == 1) {
-    alphaW_names = "W"
-  } else {
-    alphaW_names <- paste0("W", 1:q)
+    W <- matrix(W, dimnames = list(NULL, aug_names))
   }
   
-  conv = (max(summary(fit)$coefficients[,"Std. Error"]) < 1e3);
+  #' Step 2: fit the reduced glm model 
+  theta.X <- drop(X[,orig_names, drop = FALSE] %*% theta_tilde)
+  mod2 <- glm(Y ~ ., family = "binomial", data.frame(Y, theta.X, W))
+  alpha <- coef(mod2)
   
+  conv = (max(summary(mod2)$coefficients[,"Std. Error"]) < 1e3);
   #' Step 3: obtain final estimates
-  
-  intercept_hat <- alpha["(Intercept)"] - sum(alpha[alphaW_names] * gamma[,"(Intercept)"]) #intercept estimate
+  intercept_hat <- alpha["(Intercept)"] - sum(alpha[aug_names] * gamma[,"(Intercept)"]) #intercept estimate
   
   beta_hat <- 
-    c(alpha["theta.X"] * theta_tilde_no_intercept - 
-        alpha[alphaW_names] %*% gamma[,gamma_names],
-      alpha[alphaW_names])
-  names(beta_hat) <- 
-    c(paste0("X_orig", 1:p), paste0("X_aug", 1:q))
-  
+    c(alpha["theta.X"] * theta_tilde - 
+        alpha[aug_names] %*% gamma[,orig_names],
+      alpha[aug_names])
+  names(beta_hat) <- c(orig_names, aug_names)
   
   return(list(intercept_hat = intercept_hat,
-              beta_hat = beta_hat,
+              beta_hat = beta_hat[colnames(X)],
               converge = conv, 
+              message = NA,
               iter = NA,
               singular_hessian = NA,
               final_diff = NA, 

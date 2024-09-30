@@ -1,9 +1,7 @@
-fxn_glm_bayes <- function(Y, X_orig, X_aug, seed = sample.int(.Machine$integer.max, 1)) {
-  
-  temp_data <- data.frame(Y, X_orig, X_aug)
+fxn_glm_bayes <- function(Y, X, seed = sample.int(.Machine$integer.max, 1)) {
   
   fitted_model <- stan_glm(Y ~ .,
-                           data = temp_data,
+                           data = data.frame(Y, X),
                            family = "binomial", 
                            prior = student_t(df = 3),
                            warmup = 1e3, 
@@ -15,16 +13,20 @@ fxn_glm_bayes <- function(Y, X_orig, X_aug, seed = sample.int(.Machine$integer.m
                            refresh = 0);
   
   beta_hat <- coef(fitted_model)[-1]
-  names(beta_hat) <- 
-    c(paste0("X_orig", 1:ncol(X_orig)), paste0("X_aug", 1:1:ncol(X_aug)))
+  sampler_params <- get_sampler_params(fitted_model$stanfit, inc_warmup = F)
+  
   
   return(list(
     intercept_hat = coef(fitted_model)["(Intercept)"],
     beta_hat = beta_hat,
-    iter = NA,
     converge = NA, 
+    message = NA,
+    iter = NA,
     singular_hessian = NA,
     final_diff = NA,
-    objective_function = c("total" = NA)))
+    objective_function = c("total" = NA),
+    num_divergences = sum(sapply(sampler_params, function(x) mean(x[, "divergent__"]))),
+    max_rhat = max(summary(fitted_model$stanfit)$summary[,"Rhat"])
+    ))
   
 }
