@@ -1,7 +1,7 @@
 
 
-if(!exists("n_hist_seq")) {n_hist_seq = c(100, 400, 1600);}
-if(!exists("n_curr_seq")) {n_curr_seq = c(100, 400);}
+if(!exists("n_hist_seq")) {n_hist_seq = c(400, 1600);}
+if(!exists("n_curr_seq")) {n_curr_seq = c(200, 400);}
 if(!exists("different_external_model_seq")) {different_external_model_seq = c(F, T);}
 if(!exists("different_covariate_dist_seq")) {different_covariate_dist_seq = c(F, T);}
 
@@ -17,14 +17,32 @@ all_scenarios <-
       map_int(scenario_list, ~length(.x$orig))[scenario_name], 
     num_aug = 
       map_int(scenario_list, ~length(.x$aug))[scenario_name], 
-    old_scenario_complexity_weight = (num_orig + num_aug)^(1.5) * (n_hist)^(0.25),
+    old_scenario_complexity_weight = 
+      (I(scenario_name == "scenario1") +
+         exp(0.18213) * I(scenario_name == "scenario2") +
+         exp(2.25265) * I(scenario_name == "scenario3") +
+         exp(2.71712) * I(scenario_name == "scenario4")) *
+      (n_hist)^(0.51388) * (n_curr)^(0.82694 - 0.05533 * log(n_hist)),
     old_scenario_complexity_weight = old_scenario_complexity_weight / max(old_scenario_complexity_weight),
     scenario_complexity_weight = 
-      (I(scenario_name == "scenario1") +
-         exp(0.6000) * I(scenario_name == "scenario2") +
-         exp(2.357) * I(scenario_name == "scenario3") +
-         exp(3.094) * I(scenario_name == "scenario4")) *
-      (n_hist)^(1.169) * (n_curr)^(1.182 - 0.168 * log(n_hist)),
+      case_when(
+        scenario_name == "scenario1" & n_hist == 400 & n_curr == 200 ~ 40,
+        scenario_name == "scenario2" & n_hist == 400 & n_curr == 200 ~ 58,
+        scenario_name == "scenario3" & n_hist == 400 & n_curr == 200 ~ 462,
+        scenario_name == "scenario4" & n_hist == 400 & n_curr == 200 ~ 802,
+        scenario_name == "scenario1" & n_hist == 400 & n_curr == 400 ~ 68,
+        scenario_name == "scenario2" & n_hist == 400 & n_curr == 400 ~ 79,
+        scenario_name == "scenario3" & n_hist == 400 & n_curr == 400 ~ 663,
+        scenario_name == "scenario4" & n_hist == 400 & n_curr == 400 ~ 934,
+        scenario_name == "scenario1" & n_hist == 1600 & n_curr == 200 ~ 65,
+        scenario_name == "scenario2" & n_hist == 1600 & n_curr == 200 ~ 78,
+        scenario_name == "scenario3" & n_hist == 1600 & n_curr == 200 ~ 567,
+        scenario_name == "scenario4" & n_hist == 1600 & n_curr == 200 ~ 1039,
+        scenario_name == "scenario1" & n_hist == 1600 & n_curr == 400 ~ 100,
+        scenario_name == "scenario2" & n_hist == 1600 & n_curr == 400 ~ 100,
+        scenario_name == "scenario3" & n_hist == 1600 & n_curr == 400 ~ 809,
+        scenario_name == "scenario4" & n_hist == 1600 & n_curr == 400 ~ 1164
+      ),
     scenario_complexity_weight = scenario_complexity_weight / max(scenario_complexity_weight),
     # every scenario gets one array to start. the rest are allocated according to perceived complexity
     # more complex scenarios get more arrays

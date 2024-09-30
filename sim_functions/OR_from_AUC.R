@@ -1,10 +1,15 @@
 
-auc_to_betas <- function(target_auc = 0.7, relative_scales, cor, n_samps = 3e6, seed = sample(.Machine$integer.max, 1)) {
-  require(mnormt);
-  #starting value
+auc_to_betas <- function(target_auc = 0.7, 
+                         relative_scales, 
+                         cor, 
+                         which_binary = rep(FALSE, length(relative_scales)),
+                         n_samps = 3e6, 
+                         seed = sample(.Machine$integer.max, 1)) {
+  stopifnot(length(relative_scales) == length(which_binary) && is.logical(which_binary))
   set.seed(seed);
   X <- MASS::mvrnorm(n_samps, numeric(length(relative_scales)), cor + diag(1 - cor, length(relative_scales))) 
-  log_beta_raw = -2;
+  X[,which_binary] <- 2 * (X[,which_binary] > 0) 
+  log_beta_raw <- -2;
   lin_pred <- drop(X %*% (exp(log_beta_raw) * relative_scales))
   P <- drop(plogis(lin_pred))
   Y <- rbinom(n_samps, 1, P)
@@ -34,11 +39,16 @@ auc_to_betas <- function(target_auc = 0.7, relative_scales, cor, n_samps = 3e6, 
        auc_est = current_auc)
 }
 
-betas_to_auc <- function(betas, cor, n_samps = 3e6, seed = sample(.Machine$integer.max, 1)) {
-  require(mnormt);
+betas_to_auc <- function(betas, 
+                         cor, 
+                         which_binary = rep(FALSE, length(betas)),
+                         n_samps = 3e6, 
+                         seed = sample(.Machine$integer.max, 1)) {
+  stopifnot(length(betas) == length(which_binary) && is.logical(which_binary))
   
   set.seed(seed);
   X <- MASS::mvrnorm(n_samps, numeric(length(betas)), cor + diag(1 - cor, length(betas))) 
+  X[,which_binary] <- 2 * (X[,which_binary] > 0) 
   
   lin_pred <- drop(X %*% betas)
   P <- drop(plogis(lin_pred))
@@ -55,11 +65,17 @@ betas_to_auc <- function(betas, cor, n_samps = 3e6, seed = sample(.Machine$integ
 
 
 # Includes the intercept
-betas_to_auc2 <- function(betas, cor, intercept = 0, n_samps = 3e6, seed = sample(.Machine$integer.max, 1)) {
-  require(mnormt);
+betas_to_auc2 <- function(betas, 
+                          cor, 
+                          which_binary = rep(FALSE, length(betas)),
+                          intercept = 0, 
+                          n_samps = 3e6,
+                          seed = sample(.Machine$integer.max, 1)) {
+  stopifnot(length(betas) == length(which_binary) && is.logical(which_binary))
   
   set.seed(seed);
   X <- MASS::mvrnorm(n_samps, numeric(length(betas)), cor + diag(1 - cor, length(betas))) 
+  X[,which_binary] <- 2 * (X[,which_binary] > 0) 
   
   lin_pred <- intercept + drop(X %*% betas)
   P <- drop(plogis(lin_pred))
@@ -74,11 +90,17 @@ betas_to_auc2 <- function(betas, cor, intercept = 0, n_samps = 3e6, seed = sampl
 }
 
 
-betas_to_prevalence <- function(betas, cor, intercept = 0, n_samps = 3e6, seed = sample(.Machine$integer.max, 1)) {
-  require(mnormt);
+betas_to_prevalence <- function(betas, 
+                                cor,
+                                which_binary = rep(FALSE, length(betas)),
+                                intercept = 0, 
+                                n_samps = 3e6, 
+                                seed = sample(.Machine$integer.max, 1)) {
+  stopifnot(length(betas) == length(which_binary) && is.logical(which_binary))
   
   set.seed(seed);
   X <- MASS::mvrnorm(n_samps, numeric(length(betas)), cor + diag(1 - cor, length(betas))) 
+  X[,which_binary] <- 2 * (X[,which_binary] > 0) 
   
   lin_pred <- intercept + drop(X %*% betas)
   P <- drop(plogis(lin_pred))
