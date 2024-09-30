@@ -1,4 +1,4 @@
-## ----message = F, warning = F---------------------------------
+## ----message = F, warning = F----
 library(MASS)
 library(tidyverse)
 library(adaptBayes)
@@ -13,14 +13,14 @@ library(GENMETA)
 library(gim)
 
 
-## -------------------------------------------------------------
-my_computer = FALSE
-which_batch = 3
+## -----------------------------
+my_computer = FALSE  
+which_batch = 1
 convergence_tol = 1e-4
 skip_bayes = FALSE
 
 
-## -------------------------------------------------------------
+## -----------------------------
 if(my_computer) {
   #Choose from between 1-999
   array_id = 1;# 7;#data_seed=1140350788
@@ -46,7 +46,7 @@ options(mc.cores = parallel::detectCores());
 
 
 
-## -------------------------------------------------------------
+## -----------------------------
 n_hist_seq = c(400, 1600);
 n_curr_seq = c(200, 400);
 different_external_model_seq = c(F, T);
@@ -60,7 +60,7 @@ source("aux_functions/log1plex.R")
 source("aux_functions/get_num_eff.R")
 
 
-## -------------------------------------------------------------
+## -----------------------------
 
 curr_row <- 
   all_scenarios %>%
@@ -70,7 +70,7 @@ curr_scenario_id <-
   curr_row %>% pull(scenario)
 
 
-## -------------------------------------------------------------
+## -----------------------------
 if(which_batch == 1) {
   array_id_with_offset = array_id;
 } else {
@@ -78,7 +78,7 @@ if(which_batch == 1) {
 }
 
 
-## -------------------------------------------------------------
+## -----------------------------
 source("methods/glm_vanilla.R");
 source("methods/glm_bayes.R");
 source("methods/cml_logistic_newtonraphson.R");
@@ -89,7 +89,7 @@ source("methods/genmeta_logistic_author.R");
 source("methods/ratios.R")
 
 
-## -------------------------------------------------------------
+## -----------------------------
 which_seeds <- 
   rep(seq(from = all_scenarios %>% slice(curr_scenario_id) %>% pull(start_array_id), 
           to = all_scenarios %>% slice(curr_scenario_id) %>% pull(end_array_id), 
@@ -101,7 +101,7 @@ data_seeds <-
   sample(.Machine$integer.max, sims_per_scenario)[which_seeds]
 
 
-## -------------------------------------------------------------
+## -----------------------------
 num_orig = length(scenario_list[[pull(curr_row,"scenario_name")]][["orig"]])
 orig_var_names = as.character(glue("p{1:num_orig}"))
 num_aug = length(scenario_list[[pull(curr_row,"scenario_name")]][["aug"]])
@@ -123,7 +123,7 @@ true_betas <-
 which_binary <- scenario_list[[pull(curr_row,"scenario_name")]][["which_binary"]]
 
 
-## -------------------------------------------------------------
+## -----------------------------
 slab_dof = 4;
 slab_scale = 2.5;
 set.seed(1)
@@ -139,17 +139,17 @@ beta_scale_varying_phi =
   signif(digits = 4)
 
 
-## -------------------------------------------------------------
+## -----------------------------
 i = 1
 all_scores = all_beta_ests = all_lambda_ests = all_bayesian_diag = NULL
 array_id_stats = 
   curr_row %>% 
-  mutate(array_id = array_id_with_offset,
+  mutate(array_id = array_id,
          n_sim_this_array_id = n_sim, 
          total_runtime_secs = NA)
 
 
-## -------------------------------------------------------------
+## -----------------------------
 begin = Sys.time()
 for(i in 1:n_sim) {
   
