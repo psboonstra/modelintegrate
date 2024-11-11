@@ -1,10 +1,27 @@
-#Pedro Orozco del Pino 
-#Code heavily based in code provided by Tian Gu 
+#' CML for Logistic Regression using Newton-Raphson algorithms
+#' 
+#' Implements the CML algorithm for logistic regression using Newton-Raphson
+#' algorithms as described in Section S.2 of Chatterjee et al. (2016). Code is
+#' based on code provided by Tian Gu, then subsequently heavily modified by
+#' Pedro Orozco del Pino and Philip S. Boonstra
+#'
+#' @param Y vector of 0s and 1s
+#' @param X design matrix with column names, with `nrow(X)` equal to `length(Y)`
+#' @param theta_tilde_with_intercept named vector giving the constraint,
+#'   including the intercept. `names(theta_tilde_with_intercept)`
+#'   should be a subset of  `colnames(X)`. The intercept should be
+#'   named `(Intercept)`.
+#' @param beta_init_with_intercept starting value to use for the algorithm.
+#'   `names(beta_init_with_intercept)[-1]` should be equal to `colnames(X)`, with
+#'   the first element of `names(beta_init_with_intercept)` being named `(Intercept)`.
+#' @param tol Tolerance for convergence, e.g. $1e-5$
+#' @param max_rep Maximum number of iterations of the outer loop before giving up
+#' @param step Optional multiplier of the step size. Default is 1. Use a smaller
+#'   value to take safer but less efficient steps
+#'
+#' @return A named list. `intercept_hat` and `beta_hat` are estimated values of the
+#' intercept and regression coefficients, respectively. 
 
-
-###################### CML Algorithm
-# is based on doing Newthon Raphson in the pseudo likelihood
-# for more details follow S.2 of the Supplementary information of Chatterjee et al. 2016
 
 fxn_cml_logistic_newtonraphson <- function(Y, X,
                                            theta_tilde_with_intercept, beta_init_with_intercept, 

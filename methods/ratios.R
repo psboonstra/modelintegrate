@@ -1,16 +1,18 @@
-#Pedro Orozcod del Pino+
-#Data Integration - Exploiting Ratios of Parameter Estimates from a Reduced External Model
-# 
-
-#'input:
+#' Ratios for Logistic Regression 
+#' 
+#' Implements the Ratios algorithm for logistic regression described in Taylor,
+#' et al. (2022). Code is written by Pedro Orozco del Pino and Philip S.
+#' Boonstra
 #'
-#'Y is the response variable (for the current study)
-#'p is the number of original covariates
-#'q is the number of added covariates
-#'n_curr is the sample size of the current study
-#'X_orig is the original covariates in the current study
-#'X_aug the added covariates in the current study
-#'theta_tilde effect size estimates from the historical study for the original covariates (drop the intercept)
+#'
+#' @param Y vector of 0s and 1s
+#' @param X design matrix with column names, with `nrow(X)` equal to `length(Y)`
+#' @param theta_tilde named vector giving the constraint. Don't include the
+#'   intercept. `names(theta_tilde)` should be a subset of  `colnames(X)`.
+#'   
+#' @return A named list. `intercept_hat` and `beta_hat` are estimated values of the
+#' intercept and regression coefficients, respectively. 
+
 
 ratios <- function(Y, X, theta_tilde) {
   

@@ -1,8 +1,31 @@
-#Pedro Orozco del Pino
-#Constrained Maximun Likelihood Method 
-#implementation of Han and Lawless 2019, 
-#EMPIRICAL LIKELIHOOD ESTIMATION USING AUXILIARY SUMMARY INFORMATION WITH DIFFERENT COVARIATE DISTRIBUTIONS
-
+#' CML for Logistic Regression using Saddlepoint Approximations
+#' 
+#' Implements the CML algorithm for logistic regression using saddlepoint
+#' approximations as described in Han and Lawless (2019). Code written by
+#' Pedro Orozco del Pino and Philip S. Boonstra
+#' 
+#'
+#' @param Y vector of 0s and 1s
+#' @param X design matrix with column names, with `nrow(X)` equal to `length(Y)`
+#' @param theta_tilde_with_intercept named vector giving the constraint,
+#'   including the intercept. `names(theta_tilde_with_intercept)`
+#'   should be a subset of  `colnames(X)`. The intercept should be
+#'   named `(Intercept)`.
+#' @param beta_init_with_intercept starting value to use for the algorithm.
+#'   `names(beta_init_with_intercept)[-1]` should be equal to `colnames(X)`, with
+#'   the first element of `names(beta_init_with_intercept)` being named `(Intercept)`.
+#' @param tol Tolerance for convergence, e.g. $1e-5$
+#' @param max_rep Maximum number of iterations of the outer loop before giving up
+#' @param max_step_halfs Maximum number of half steps to take. Note if the
+#'   maximum is hit the algorithm won't throw an error but rather just use the
+#'   most recent value. 
+#' @param max_abs_lambda This is an additional tuning parameter to prevent
+#'   "large" values of the Lagrange multiplier, which should be closer to zero.
+#'   The default is 2, which is a choice based upon empirical performance.
+#'
+#' @return A named list. `intercept_hat` and `beta_hat` are estimated values of the
+#' intercept and regression coefficients, respectively. 
+#'
 
 fxn_cml_logistic_saddlepoint <- function(Y, X,
                                          theta_tilde_with_intercept, beta_init_with_intercept,
@@ -11,7 +34,7 @@ fxn_cml_logistic_saddlepoint <- function(Y, X,
   stopifnot(all(colnames(X) == names(beta_init_with_intercept)[-1]))
   stopifnot(all(names(theta_tilde_with_intercept) %in% names(beta_init_with_intercept)))
   
-  #main function to optimize  
+  # M.beta is $M(\beta)$ in the unlabeled equation just after (3.10) in Han and Lawless (2019)
   M.beta <- function(beta, return_value_only = TRUE) {
     linear_predictor <- drop(X_1 %*% beta)
     prob_beta <- plogis(linear_predictor)
@@ -38,14 +61,14 @@ fxn_cml_logistic_saddlepoint <- function(Y, X,
     }
     
   }
-  
+  # Inner loop from Han and Lawless (2019) to find the Lagrange multiplier
   Inner.loop <- function(g.x.mu) {
     
     lambda <- numeric(num_orig_plus1)
     k <- 1
     max_change <- Inf
     singular <- F
-    
+    # Do at least 10 iterations
     while(tol < max_change && k <= max(10, max_rep / 20)) {
       g.x.mu.lam <- drop(g.x.mu %*% lambda)
       denom <- 1 - g.x.mu.lam
@@ -59,8 +82,10 @@ fxn_cml_logistic_saddlepoint <- function(Y, X,
         singular <- T
         break;
       }
+      # Step 1
       delta <- H.l.inv %*% J.l
       tau <- 1
+      # Step 2
       lambda.temp <- lambda - tau * delta
       cond3 <- all(abs(lambda.temp) < max_abs_lambda )
       if(cond3) {
@@ -97,7 +122,9 @@ fxn_cml_logistic_saddlepoint <- function(Y, X,
     return(list(lambda = lambda, singular = singular))    
   }
   
-  #The step 1 of the outer loop find the step size   
+  # Step 1 of the outer loop. Use one step of a numerical optimizer to reverse
+  # engineer the direction and step size. First try BFGS then fall back to
+  # Nelder-Mead
   Step1.outer.loop <- function(beta) {
     m <- try(optim(beta, M.beta,
                    control = list(fnscale = -1, maxit = 1),
@@ -112,7 +139,7 @@ fxn_cml_logistic_saddlepoint <- function(Y, X,
     delta <- beta - beta.temp
     return( delta )
   }
-  #Step 2 checks is the step 1 step is valid if not then reduces the step length and tries again  
+  # Step 2 of the outer loop. 
   Step2.outer.loop <- function(delta, beta) {
     tau <- 1
     beta.temp <- beta - tau * delta
